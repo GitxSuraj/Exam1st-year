@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbitron — Recruitment Exam 2026</title>
+<style>
+  :root{
+    --ink:#0f1b2b;
+    --paper:#f3f5f8;
+    --line:#d6dce3;
+    --accent:#1b3a5c;
+    --accent-soft:#e7edf4;
+    --danger:#8a2e2e;
+    --danger-soft:#f6e6e2;
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    user-select:none;
+  }
+  ::selection{background:transparent;}
+
+  .topbar{
+    position:sticky;top:0;z-index:10;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 28px;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .title{
+    font-family:var(--serif);
+    font-size:18px;
+    letter-spacing:0.2px;
+  }
+  .topbar .title small{
+    display:block; font-family:var(--sans); font-size:11px; color:#66707c; letter-spacing:0.4px;
+  }
+  .timer{
+    font-variant-numeric:tabular-nums;
+    font-family:var(--mono);
+    font-size:15px;
+    padding:6px 14px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+  }
+  .timer.low{ border-color:var(--danger); color:var(--danger); background:var(--danger-soft); }
+
+  .wrap{ max-width:700px; margin:0 auto; padding:36px 20px 80px; }
+
+  .notice{
+    border:1px solid var(--line);
+    background:#fff;
+    border-left:3px solid var(--accent);
+    padding:14px 16px;
+    font-size:14px;
+    line-height:1.55;
+    margin-bottom:28px;
+    color:#3a444e;
+  }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:13px; color:#555; margin-bottom:5px; }
+  .field input, .field select{
+    width:100%; padding:10px 12px; font-size:15px;
+    border:1px solid var(--line); border-radius:3px; background:#fff;
+    font-family:var(--sans); color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .phone-row{ display:flex; gap:8px; }
+  .phone-row .prefix{
+    width:56px; text-align:center; background:var(--accent-soft); border:1px solid var(--line);
+    border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--accent); font-weight:600;
+  }
+  .phone-row input{ flex:1; }
+
+  .q{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px 22px;
+    margin-bottom:16px;
+  }
+  .q-num{ font-size:12px; color:#7a8a99; margin-bottom:6px; }
+  .q-text{ font-family:var(--serif); font-size:17px; line-height:1.45; margin-bottom:14px; }
+  .opt{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:9px 10px; border-radius:3px; cursor:pointer;
+    font-size:15px; line-height:1.4;
+  }
+  .opt:hover{ background:var(--accent-soft); }
+  .opt input{ margin-top:3px; }
+
+  .submit-row{ margin-top:30px; text-align:right; }
+  button{
+    font-family:var(--sans); font-size:15px; font-weight:600;
+    padding:12px 26px; border-radius:3px; border:none;
+    background:var(--accent); color:#fff; cursor:pointer;
+  }
+  button:hover{ background:#122a45; }
+  button:disabled{ background:#b7c0c9; cursor:not-allowed; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .result-box{
+    background:#fff; border:1px solid var(--line); border-radius:4px;
+    padding:40px 32px; text-align:center; margin-top:40px;
+  }
+  .result-box h2{ font-family:var(--serif); margin-top:0; font-size:26px; }
+  .result-note{ color:#556070; font-size:15px; margin-top:10px; line-height:1.6; }
+
+  .watermark{
+    position:fixed; bottom:14px; right:18px;
+    font-size:11px; color:#9aa6b2;
+  }
+
+  .progress{ font-size:12px; color:#7a8a99; margin-bottom:18px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title">Orbitron — Recruitment Exam 2026<small>Space Technology Club</small></div>
+  <div class="timer" id="timerDisplay">60:00</div>
+</div>
+
+<div class="wrap">
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="screen-start">
+    <div class="notice">
+      Duration: 60 minutes · 30 MCQs · 1 mark each · No negative marking.<br>
+      This exam auto-submits if you switch tabs, minimize the window, or leave this page.
+      Copying, right-click, and text selection are disabled. Stay on this tab for the full duration.
+    </div>
+
+    <div class="field">
+      <label for="studentName">Full name</label>
+      <input type="text" id="studentName" required>
+    </div>
+
+    <div class="field">
+      <label for="branch">Branch</label>
+      <select id="branch" required>
+        <option value="" disabled selected>Select your branch</option>
+        <option>CSE</option>
+        <option>CSE (AI)</option>
+        <option>CSE (AIML)</option>
+        <option>CSE (Data Science)</option>
+        <option>CS (Cyber Security)</option>
+        <option>IT</option>
+        <option>ECE</option>
+        <option>EN (Electronics)</option>
+        <option>EEE</option>
+        <option>ME</option>
+        <option>Civil</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="section">Section</label>
+      <input type="text" id="section" placeholder="e.g. CS-3" required>
+    </div>
+
+    <div class="field">
+      <label for="uid">KIET UID</label>
+      <input type="text" id="uid" placeholder="e.g. 2401234567" required>
+    </div>
+
+    <div class="field">
+      <label for="studentEmail">KIET email ID</label>
+      <input type="email" id="studentEmail" placeholder="yourname@kiet.edu" required>
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone number</label>
+      <div class="phone-row">
+        <div class="prefix">+91</div>
+        <input type="tel" id="phone" placeholder="10-digit mobile number" maxlength="10" required>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button id="beginBtn">Begin exam</button>
+    </div>
+  </div>
+
+  <!-- EXAM SCREEN -->
+  <div class="screen" id="screen-exam">
+    <div id="questionsContainer"></div>
+    <div class="submit-row">
+      <button id="submitBtn">Submit exam</button>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screen-result">
+    <div class="result-box">
+      <h2 id="resultHeading">Exam submitted</h2>
+      <div class="result-note" id="resultNote">
+        Thank you for responding. Your submission has been recorded.<br>
+        You may close this tab now.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="watermark">Orbitron 2026</div>
+
+<script>
+/* ============================================================
+   1. CONFIG
+   ============================================================ */
+
+// Paste your Google Apps Script /exec URL here (see google-apps-script.gs)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5qMWBRrx75fjAer9IfzbwSOHY_eZZgG2vzuDbL9kTbKfU8B9JFm8Lg_53GGpRD_Rydg/exec";
+
+const EXAM_DURATION_MINUTES = 60;
+
+const QUESTIONS = [
+  { text: "On an Arduino Uno, the instruction analogWrite(pin, 64) generates a PWM signal whose duty cycle is approximately", options: ["6.4 %","25 %","50 %","64 %"], correct: 1 },
+  { text: "A microcontroller communicates with three sensors over a standard 4-wire SPI bus using independent slave-select lines. What is the minimum number of microcontroller pins required?", options: ["4","5","6","7"], correct: 2 },
+  { text: "A push button is connected between a GPIO pin and ground, and the internal pull-up resistor of that pin is enabled. What logic level does the pin read when the button is pressed?", options: ["LOW, because the pin is connected to ground through the button","HIGH, because the pull-up resistor dominates","Floating, because no external resistor is used","Alternating between HIGH and LOW"], correct: 0 },
+  { text: "A temperature sensor with an output of 10 mV/°C is connected to a 10-bit ADC operating with a 5 V reference. If the ADC returns a value of 205, the measured temperature is approximately", options: ["10 °C","50 °C","100 °C","205 °C"], correct: 2 },
+  { text: "An H-bridge driver such as the L298N is used with a rover's DC motor mainly because it allows the motor to", options: ["operate at a higher supply voltage than rated","rotate in both directions by reversing the applied polarity","consume less current during startup","be controlled without any PWM signal"], correct: 1 },
+  { text: "A microcontroller board keeps resetting randomly every time the rover's drive motor starts, although the code runs perfectly when the motor is disconnected. The most likely cause is", options: ["an error in the program's loop structure","a large inrush current from the motor causing a supply voltage dip on the shared rail","incorrect baud rate configuration","the motor operating at too low a PWM frequency"], correct: 1 },
+  { text: "As the altitude of a circular Earth orbit increases, the orbital velocity of the satellite and its orbital period respectively", options: ["increase and decrease","decrease and increase","both increase","both decrease"], correct: 1 },
+  { text: "Housekeeping data such as battery voltage, solar-panel current and internal temperature is sent from a satellite to the ground station through", options: ["the telemetry link","the command link","the payload data bus","the attitude control subsystem"], correct: 0 },
+  { text: "If the diameter of a parabolic ground-station dish is doubled while the operating frequency remains the same, the antenna gain increases by approximately", options: ["2 dB","3 dB","6 dB","12 dB"], correct: 2 },
+  { text: "What is the minimum number of GNSS satellites that must be visible to compute a three-dimensional position fix?", options: ["2","3","4","6"], correct: 2 },
+  { text: "A Sun-synchronous orbit is preferred for Earth-observation satellites because it", options: ["keeps the satellite permanently above one point on the equator","allows the satellite to cross a given latitude at nearly the same local solar time, giving consistent illumination","eliminates the need for an onboard power system","removes the need for any orbital station-keeping"], correct: 1 },
+  { text: "A model is trained to predict the exact battery voltage of a CubeSat one hour into the future. This task is an example of", options: ["classification","regression","clustering","dimensionality reduction"], correct: 1 },
+  { text: "A dataset is split into training, validation and test sets. The primary purpose of the validation set is to", options: ["increase the total size of the training data","tune hyperparameters and compare models before the final test evaluation","replace the test set when accuracy is low","store only the mislabelled samples"], correct: 1 },
+  { text: "Which of the following is a valid technique for reducing overfitting in a neural network?", options: ["Increasing the number of layers indefinitely","Training for many more epochs on the same data","Applying dropout and regularization","Reducing the size of the training dataset"], correct: 2 },
+  { text: "An AI system analyses satellite imagery to detect forest fires. Failing to detect an actual fire is far more damaging than raising a false alarm. Which metric should be prioritized?", options: ["Precision","Recall","Specificity","Training accuracy"], correct: 1 },
+  { text: "In a neural network, backpropagation is used to", options: ["randomly initialize the weights before training","compute the gradients of the loss with respect to the weights so they can be updated","convert the input data into a normalized form","select the number of neurons in each hidden layer"], correct: 1 },
+  { text: "A rigid component floating freely in three-dimensional space, before any assembly mate is applied, has how many degrees of freedom?", options: ["3","4","6","12"], correct: 2 },
+  { text: "In first-angle projection, the top view of an object is placed", options: ["above the front view","below the front view","to the left of the front view","behind the front view"], correct: 1 },
+  { text: "To increase the bending stiffness of a flat satellite structural panel with the least possible increase in mass, the most effective design approach is to", options: ["increase the panel thickness uniformly","use a honeycomb sandwich or add stiffening ribs to raise the second moment of area","change the material to one with higher density","add additional fasteners along the edges"], correct: 1 },
+  { text: "Which of the following is NOT a geometric relation applied within a 2D CAD sketch?", options: ["Tangent","Concentric","Extrude","Perpendicular"], correct: 2 },
+  { text: "In an 8-bit grayscale image, a pixel value of 255 represents", options: ["pure black","maximum brightness (white)","a transparent pixel","an undefined pixel"], correct: 1 },
+  { text: "A binary mask of a landing pad contains many small scattered white specks caused by noise. Which morphological operation is best suited to remove them while preserving the shape of the pad?", options: ["Dilation","Opening","Closing","Histogram equalization"], correct: 1 },
+  { text: "A drone must identify multiple cracks in a solar panel image and also report where each crack is located. This task is best described as", options: ["image classification","object detection","image compression","edge thinning"], correct: 1 },
+  { text: "A satellite imaging camera is specified to have a ground sample distance (GSD) of 5 metres. This means that", options: ["the satellite orbits 5 metres above its nominal altitude","each image pixel corresponds to a 5 m × 5 m area on the ground","the camera captures one image every 5 metres of ground travel","the smallest detectable object must be 5 kilometres wide"], correct: 1 },
+  { text: "A ground-station transmitter delivers 20 dBm of power, the feeder cable introduces a 3 dB loss, and the antenna provides 12 dBi of gain. The effective isotropic radiated power (EIRP) is", options: ["5 dBm","29 dBm","35 dBm","44 dBm"], correct: 1 },
+  { text: "A satellite stores 2 GB of imagery during one pass and downlinks it at 40 Mbps. Assuming 1 byte = 8 bits and no overhead, the time required for the complete download is approximately", options: ["50 seconds","100 seconds","400 seconds","800 seconds"], correct: 2 },
+  { text: "A rover uses a 12 V, 5000 mAh battery pack to run a constant load of 24 W. Ignoring losses, the approximate operating time is", options: ["1.0 hour","2.5 hours","5.0 hours","10.0 hours"], correct: 1 },
+  { text: "Find the next number in the series: 5, 11, 23, 47, ___", options: ["71","83","94","95"], correct: 3 },
+  { text: "Consider the statement: \"No satellite that fails the thermal vacuum test is launched.\" Satellite Z was launched. Which conclusion necessarily follows?", options: ["Satellite Z did not fail the thermal vacuum test","Satellite Z was never subjected to any test","Satellite Z failed the test but was launched anyway","Nothing can be concluded about Satellite Z"], correct: 0 },
+  { text: "A CubeSat carries a critical sensor with a mission reliability of 90%. A second identical sensor is added in parallel as a redundant unit, and the mission succeeds if at least one sensor works. The reliability of the redundant configuration is", options: ["81 %","90 %","95 %","99 %"], correct: 3 }
+];
+
+/* ============================================================
+   2. STATE
+   ============================================================ */
+let examStarted = false;
+let examSubmitted = false;
+let timeLeft = EXAM_DURATION_MINUTES * 60;
+let timerInterval = null;
+const userAnswers = {};
+
+/* ============================================================
+   3. SCREEN HELPERS
+   ============================================================ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ============================================================
+   4. BUILD QUESTIONS
+   ============================================================ */
+function renderQuestions(){
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = '';
+
+  const progress = document.createElement('div');
+  progress.className = 'progress';
+  progress.textContent = `${QUESTIONS.length} questions · 1 mark each · no negative marking`;
+  container.appendChild(progress);
+
+  QUESTIONS.forEach((q, qi) => {
+    const qDiv = document.createElement('div');
+    qDiv.className = 'q';
+    const num = document.createElement('div');
+    num.className = 'q-num';
+    num.textContent = `Question ${qi + 1} of ${QUESTIONS.length}`;
+    const text = document.createElement('div');
+    text.className = 'q-text';
+    text.textContent = q.text;
+    qDiv.appendChild(num);
+    qDiv.appendChild(text);
+
+    q.options.forEach((opt, oi) => {
+      const label = document.createElement('label');
+      label.className = 'opt';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = `q${qi}`;
+      input.value = oi;
+      input.addEventListener('change', () => { userAnswers[qi] = oi; });
+      const span = document.createElement('span');
+      span.textContent = opt;
+      label.appendChild(input);
+      label.appendChild(span);
+      qDiv.appendChild(label);
+    });
+
+    container.appendChild(qDiv);
+  });
+}
+
+/* ============================================================
+   5. TIMER
+   ============================================================ */
+function startTimer(){
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0){
+      clearInterval(timerInterval);
+      finishExam('Completed', 'Time expired');
+    }
+  }, 1000);
+}
+function updateTimerDisplay(){
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const el = document.getElementById('timerDisplay');
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.classList.toggle('low', timeLeft <= 60);
+}
+
+/* ============================================================
+   6. SCORING (computed but never shown to the student)
+   ============================================================ */
+function computeScore(){
+  let score = 0;
+  QUESTIONS.forEach((q, qi) => {
+    if (userAnswers[qi] === q.correct) score++;
+  });
+  return score;
+}
+
+/* ============================================================
+   7. SUBMIT TO GOOGLE SHEETS
+   ============================================================ */
+async function sendResults(status, note){
+  const name = document.getElementById('studentName').value || 'Unknown';
+  const branch = document.getElementById('branch').value || '';
+  const section = document.getElementById('section').value || '';
+  const uid = document.getElementById('uid').value || '';
+  const email = document.getElementById('studentEmail').value || '';
+  const phone = document.getElementById('phone').value ? `+91${document.getElementById('phone').value}` : '';
+  const score = computeScore();
+  const total = QUESTIONS.length;
+  const percentage = Math.round((score / total) * 100);
+
+  const payload = {
+    name, branch, section, uid, email, phone,
+    score, total, percentage,
+    status: status + (note ? ` (${note})` : '')
+  };
+
+  // Show the neutral confirmation screen locally regardless of network outcome
+  showScreen('screen-result');
+
+  if (!SCRIPT_URL || SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
+    console.warn('SCRIPT_URL not configured — results were not sent anywhere.');
+    return;
+  }
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.error('Failed to send results:', err);
+  }
+}
+
+/* ============================================================
+   8. FINISH / AUTO-SUBMIT LOGIC
+   ============================================================ */
+function finishExam(status, note){
+  if (examSubmitted) return;
+  examSubmitted = true;
+  clearInterval(timerInterval);
+  sendResults(status, note);
+}
+
+/* ============================================================
+   9. INTEGRITY GUARDS
+   ============================================================ */
+document.addEventListener('visibilitychange', () => {
+  if (examStarted && !examSubmitted && document.hidden){
+    finishExam('Flagged', 'left the exam tab');
+  }
+});
+window.addEventListener('blur', () => {
+  if (examStarted && !examSubmitted){
+    finishExam('Flagged', 'left the exam window');
+  }
+});
+
+['copy','cut','contextmenu'].forEach(evt => {
+  document.addEventListener(evt, e => {
+    if (examStarted) e.preventDefault();
+  });
+});
+document.addEventListener('selectstart', e => {
+  if (examStarted) e.preventDefault();
+});
+
+document.addEventListener('keydown', e => {
+  if (!examStarted || examSubmitted) return;
+  const blockedWithMod = ['c','x','p','s','f','u'];
+  if ((e.ctrlKey || e.metaKey) && blockedWithMod.includes(e.key.toLowerCase())){
+    e.preventDefault();
+  }
+  if (e.key === 'F12'){
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('beforeunload', (e) => {
+  if (examStarted && !examSubmitted){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+/* ============================================================
+   10. WIRE UP UI
+   ============================================================ */
+document.getElementById('beginBtn').addEventListener('click', () => {
+  const name = document.getElementById('studentName').value.trim();
+  const branch = document.getElementById('branch').value;
+  const section = document.getElementById('section').value.trim();
+  const uid = document.getElementById('uid').value.trim();
+  const email = document.getElementById('studentEmail').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+
+  if (!name || !branch || !section || !uid || !email || !phone){
+    alert('Please fill in all fields before starting.');
+    return;
+  }
+  if (!/^\d{10}$/.test(phone)){
+    alert('Please enter a valid 10-digit phone number.');
+    return;
+  }
+
+  renderQuestions();
+  showScreen('screen-exam');
+  examStarted = true;
+  startTimer();
+});
+
+document.getElementById('submitBtn').addEventListener('click', () => {
+  const answeredCount = Object.keys(userAnswers).length;
+  if (answeredCount < QUESTIONS.length){
+    const proceed = confirm(
+      `You've answered ${answeredCount} of ${QUESTIONS.length} questions. Submit anyway?`
+    );
+    if (!proceed) return;
+  }
+  finishExam('Completed', '');
+});
+</script>
+
+</body>
+</html>
