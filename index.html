@@ -161,10 +161,11 @@
         <option>CS (Cyber Security)</option>
         <option>IT</option>
         <option>ECE</option>
-        <option>EN (Electronics)</option>
+        <option>ECE-VLSI</option>
+        <option>ELCE</option>
+        <option>AMIA</option>
         <option>EEE</option>
         <option>ME</option>
-        <option>Civil</option>
         <option>Other</option>
       </select>
     </div>
@@ -181,14 +182,14 @@
 
     <div class="field">
       <label for="studentEmail">KIET email ID</label>
-      <input type="email" id="studentEmail" placeholder="yourname@kiet.edu" required>
+      <input type="email" id="studentEmail" placeholder="yourname@kiet.edu" pattern="[a-zA-Z0-9._%+-]+@kiet\.edu" required>
     </div>
 
     <div class="field">
       <label for="phone">Phone number</label>
       <div class="phone-row">
         <div class="prefix">+91</div>
-        <input type="tel" id="phone" placeholder="10-digit mobile number" maxlength="10" required>
+        <input type="tel" id="phone" placeholder="10-digit mobile number" inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}" required>
       </div>
     </div>
 
@@ -216,9 +217,20 @@
     </div>
   </div>
 
+  <!-- ALREADY SUBMITTED SCREEN -->
+  <div class="screen" id="screen-already">
+    <div class="result-box">
+      <h2>Already submitted</h2>
+      <div class="result-note">
+        Our records show this exam has already been submitted from this device.<br>
+        Each candidate may attempt the exam only once. If you believe this is an error, contact the Orbitron team.
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<div class="watermark">Orbitron 2026</div>
+<div class="watermark" id="watermark">Orbitron 2026</div>
 
 <script>
 /* ============================================================
@@ -226,7 +238,7 @@
    ============================================================ */
 
 // Paste your Google Apps Script /exec URL here (see google-apps-script.gs)
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5qMWBRrx75fjAer9IfzbwSOHY_eZZgG2vzuDbL9kTbKfU8B9JFm8Lg_53GGpRD_Rydg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxNCK0fNZKP2tzaHhob2kVXUvWnLCNlm9vYLJs3j9Zd7POip39nCucQxwHqLSvon9QOhQ/exec";
 
 const EXAM_DURATION_MINUTES = 60;
 
@@ -271,6 +283,46 @@ let examSubmitted = false;
 let timeLeft = EXAM_DURATION_MINUTES * 60;
 let timerInterval = null;
 const userAnswers = {};
+let clientIP = 'Unknown';
+const SUBMIT_FLAG_KEY = 'orbitron_' + document.title.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_submitted';
+
+function getDeviceFingerprint(){
+  try {
+    const nav = navigator, scr = screen;
+    let canvasFp = '';
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.textBaseline = 'top';
+      ctx.font = "14px Arial";
+      ctx.fillText('orbitron-fingerprint', 2, 2);
+      canvasFp = canvas.toDataURL();
+    } catch(e){}
+    const raw = [
+      nav.userAgent, nav.language, scr.width, scr.height, scr.colorDepth,
+      Intl.DateTimeFormat().resolvedOptions().timeZone, nav.hardwareConcurrency || '',
+      canvasFp
+    ].join('|');
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++){
+      hash = (hash << 5) - hash + raw.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'fp_' + Math.abs(hash).toString(36);
+  } catch(e){
+    return 'fp_unknown';
+  }
+}
+
+async function fetchClientIP(){
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return data.ip || 'Unknown';
+  } catch(e){
+    return 'Unknown';
+  }
+}
 
 /* ============================================================
    3. SCREEN HELPERS
@@ -369,30 +421,43 @@ async function sendResults(status, note){
   const score = computeScore();
   const total = QUESTIONS.length;
   const percentage = Math.round((score / total) * 100);
+  const deviceId = getDeviceFingerprint();
 
   const payload = {
     name, branch, section, uid, email, phone,
     score, total, percentage,
-    status: status + (note ? ` (${note})` : '')
+    status: status + (note ? ` (${note})` : ''),
+    ip: clientIP,
+    deviceId
   };
 
-  // Show the neutral confirmation screen locally regardless of network outcome
-  showScreen('screen-result');
+  let duplicate = false;
 
   if (!SCRIPT_URL || SCRIPT_URL.indexOf('PASTE_YOUR') === 0){
     console.warn('SCRIPT_URL not configured — results were not sent anywhere.');
-    return;
+  } else {
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      duplicate = !!result.duplicate;
+    } catch (err) {
+      console.error('Failed to send results:', err);
+    }
   }
 
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    console.error('Failed to send results:', err);
+  // Mark this browser/device as having submitted, as a soft local guard
+  try { localStorage.setItem(SUBMIT_FLAG_KEY, 'true'); } catch(e){}
+
+  showScreen('screen-result');
+  if (duplicate){
+    document.getElementById('resultHeading').textContent = 'Duplicate submission recorded';
+    document.getElementById('resultNote').innerHTML =
+      'Our records show a previous submission under this UID or email.<br>' +
+      'This attempt has been logged for review. You may close this tab now.';
   }
 }
 
@@ -435,6 +500,10 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && blockedWithMod.includes(e.key.toLowerCase())){
     e.preventDefault();
   }
+  // Block common devtools shortcuts
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())){
+    e.preventDefault();
+  }
   if (e.key === 'F12'){
     e.preventDefault();
   }
@@ -450,7 +519,21 @@ window.addEventListener('beforeunload', (e) => {
 /* ============================================================
    10. WIRE UP UI
    ============================================================ */
-document.getElementById('beginBtn').addEventListener('click', () => {
+// Sanitize phone input as the user types: digits only, max 10
+document.getElementById('phone').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+});
+
+// If this browser already has a submission on record for this exam, block a second attempt
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    if (localStorage.getItem(SUBMIT_FLAG_KEY) === 'true'){
+      showScreen('screen-already');
+    }
+  } catch(e){}
+});
+
+document.getElementById('beginBtn').addEventListener('click', async () => {
   const name = document.getElementById('studentName').value.trim();
   const branch = document.getElementById('branch').value;
   const section = document.getElementById('section').value.trim();
@@ -466,6 +549,25 @@ document.getElementById('beginBtn').addEventListener('click', () => {
     alert('Please enter a valid 10-digit phone number.');
     return;
   }
+  if (!/^[a-zA-Z0-9._%+-]+@kiet\.edu$/i.test(email)){
+    alert('Please enter a valid KIET email address (must end with @kiet.edu).');
+    return;
+  }
+  try {
+    if (localStorage.getItem(SUBMIT_FLAG_KEY) === 'true'){
+      showScreen('screen-already');
+      return;
+    }
+  } catch(e){}
+
+  const beginBtn = document.getElementById('beginBtn');
+  beginBtn.disabled = true;
+  beginBtn.textContent = 'Loading...';
+
+  clientIP = await fetchClientIP();
+
+  const watermark = document.getElementById('watermark');
+  watermark.textContent = `Orbitron 2026 — ${name} (${uid})`;
 
   renderQuestions();
   showScreen('screen-exam');
@@ -475,12 +577,12 @@ document.getElementById('beginBtn').addEventListener('click', () => {
 
 document.getElementById('submitBtn').addEventListener('click', () => {
   const answeredCount = Object.keys(userAnswers).length;
+  let message = 'Are you sure you want to submit the exam? This cannot be undone.';
   if (answeredCount < QUESTIONS.length){
-    const proceed = confirm(
-      `You've answered ${answeredCount} of ${QUESTIONS.length} questions. Submit anyway?`
-    );
-    if (!proceed) return;
+    message = `You've answered ${answeredCount} of ${QUESTIONS.length} questions. ` + message;
   }
+  const proceed = confirm(message);
+  if (!proceed) return;
   finishExam('Completed', '');
 });
 </script>
